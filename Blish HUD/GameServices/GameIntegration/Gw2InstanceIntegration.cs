@@ -264,16 +264,34 @@ namespace Blish_HUD.GameIntegration {
         private void TryAttachToGw2() {
             // Get process from Mumble if it is defined
             // otherwise just get the first instance running
+            Process candidate;
+
             if (ApplicationSettings.Instance.MumbleMapName != null) {
                 // User-set mumble link name - so don't fallback.
-                this.Gw2Process = GetMumbleSpecifiedGw2Process();
+                candidate = GetMumbleSpecifiedGw2Process();
             } else {
                 // No user-set mumble link name - so fallback,
                 // starting with default mumble data if found
-                this.Gw2Process = GetMumbleSpecifiedGw2Process()
-                               ?? GetDefaultGw2ProcessById()
-                               ?? GetDefaultGw2ProcessByName();
+                candidate = GetMumbleSpecifiedGw2Process()
+                         ?? GetDefaultGw2ProcessById()
+                         ?? GetDefaultGw2ProcessByName();
             }
+
+            // This runs every time the game regains focus.  A fresh Process object for the process we are already attached
+            // to is not "the same" as far as the property setter is concerned, so it would redo the full attach (command
+            // line, environment, main module, window class, another Exited handler), which costs ~1 s under Wine.
+            // Only skip once we are attached AND the game is running: while it is not yet running (e.g. launcher window),
+            // repeating the attach is how Blish notices that the game window has finished starting.
+            try {
+                if (this.Gw2IsRunning && candidate != null && _gw2Process != null && !_gw2Process.HasExited && candidate.Id == _gw2Process.Id) {
+                    candidate.Dispose();
+                    return;
+                }
+            } catch (Exception ex) when (ex is InvalidOperationException || ex is Win32Exception) {
+                // Fall through to the regular attach.
+            }
+
+            this.Gw2Process = candidate;
 
             if (this.Gw2IsRunning) {
                 try {
