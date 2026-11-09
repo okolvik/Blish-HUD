@@ -78,6 +78,10 @@ namespace Blish_HUD.GameServices.ArcDps {
             processor.RegisterListener(listener);
         }
 
+        // Polling the socket every 1 ms is effectively ~15 ms on Windows (timer resolution), but on Mono/Wine it is a real
+        // 1 ms timer and keeps the timer thread spinning.  Poll less often there.
+        private static readonly int IdlePollDelayMs = WindowUtil.IsWine ? 8 : 1;
+
         private void ProcessMessage(MessageProcessor processor, BlockingCollection<byte[]> messageQueue) {
             while (!_linkedToken.IsCancellationRequested) {
                 _linkedToken.ThrowIfCancellationRequested();
@@ -145,7 +149,7 @@ namespace Blish_HUD.GameServices.ArcDps {
                     ct.ThrowIfCancellationRequested();
 
                     if (Client.Available == 0) {
-                        await Task.Delay(1, ct);
+                        await Task.Delay(IdlePollDelayMs, ct);
                         continue;
                     }
 
@@ -182,7 +186,7 @@ namespace Blish_HUD.GameServices.ArcDps {
                     ct.ThrowIfCancellationRequested();
 
                     if (Client.Available == 0) {
-                        await Task.Delay(1, ct);
+                        await Task.Delay(IdlePollDelayMs, ct);
                         continue;
                     }
 

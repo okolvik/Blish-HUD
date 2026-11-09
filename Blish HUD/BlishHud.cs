@@ -162,13 +162,28 @@ namespace Blish_HUD {
 
             if (!GameService.GameIntegration.Gw2Instance.Gw2IsRunning) return;
 
+            // Under Wine the overlay is rendered off-screen and presented by other means (see WineOverlay).
+            bool wine = WindowUtil.IsWine;
+            if (wine && !_wineOverlay.BeginFrame(this.GraphicsDevice)) return;
+
             GameService.Graphics.Render(gameTime, _basicSpriteBatch);
 
             _basicSpriteBatch.Begin();
             GameService.Debug.DrawDebugOverlay(_basicSpriteBatch, gameTime);
             _basicSpriteBatch.End();
-            
+
+            if (wine) _wineOverlay.EndFrame(this.GraphicsDevice, FormHandle);
+
             base.Draw(gameTime);
+        }
+
+        private readonly WineOverlay _wineOverlay = new WineOverlay();
+
+        protected override void EndDraw() {
+            // Under Wine nothing is shown through the swapchain, so there is nothing to present.
+            if (!WindowUtil.IsWine) {
+                base.EndDraw();
+            }
         }
     }
 }

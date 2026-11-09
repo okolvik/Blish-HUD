@@ -185,6 +185,10 @@ namespace Blish_HUD.GameIntegration {
         private void InitializeProcessMeterInformations() {
             if (!_service.Gw2Instance.Gw2IsRunning) return;
 
+            // Wine's audio session APIs are per-process and only partially implemented: NAudio's session manager throws
+            // NotImplemented from its finalizer, which takes the whole process down.  Skip game volume sync there.
+            if (WindowUtil.IsWine) return;
+
             _gw2AudioDevices.Clear();
             foreach (var device in _deviceEnumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active)) {
                 SessionCollection sessionEnumerator = null;

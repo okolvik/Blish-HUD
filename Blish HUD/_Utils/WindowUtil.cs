@@ -140,7 +140,29 @@ namespace Blish_HUD {
             // Let Gw2InstanceIntegration sync behavior with game runtime
             SetShowInTaskbar(winHandle, false);
 
-            SetLayeredWindowAttributes(winHandle, 0, 255, 2);
+            if (IsWine) {
+                // SetLayeredWindowAttributes gives an opaque (no alpha) X11 window under Wine.
+                LayeredWindowPresenter.InitializeArgbSurface(winHandle);
+            } else {
+                SetLayeredWindowAttributes(winHandle, 0, 255, 2);
+            }
+        }
+
+        [DllImport("ntdll.dll", EntryPoint = "wine_get_version")]
+        private static extern IntPtr WineGetVersion();
+
+        /// <summary>
+        /// Indicates that we are running under Wine/Proton (detected by Wine's <c>wine_get_version</c> export in ntdll).
+        /// </summary>
+        internal static bool IsWine { get; } = DetectWine();
+
+        private static bool DetectWine() {
+            try {
+                WineGetVersion();
+                return true;
+            } catch (Exception) {
+                return false;
+            }
         }
 
         public enum OverlayUpdateResponse {
