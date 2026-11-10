@@ -251,6 +251,9 @@ namespace Blish_HUD.Modules {
                 Logger.Warn(ex, "Module {module} failed to load a dependency.", this.Manifest.GetDetailedName());
             } catch (ReflectionTypeLoadException ex) {
                 Logger.Warn(ex, "Module {module} failed to load because it depended on something not available in this version.  Ensure you are using the correct module and Blish HUD versions.", this.Manifest.GetDetailedName());
+            } catch (TypeLoadException ex) {
+                // A type in the module needs something this platform lacks (e.g. Windows-only APIs under Wine).  Skip the module rather than crash.
+                Logger.Warn(ex, "Module {module} failed to load because a type it uses is unavailable on this system.", this.Manifest.GetDetailedName());
             }
 
             _forceAllowDependency = false;

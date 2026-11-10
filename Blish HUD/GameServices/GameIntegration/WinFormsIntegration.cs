@@ -46,6 +46,10 @@ namespace Blish_HUD.GameIntegration {
             WindowUtil.SetShowInTaskbar(BlishHud.Instance.FormHandle, showInTaskbar);
         }
 
+        // Under Wine the tray icon becomes a small stray window on the desktop (Wine's tray has nothing to dock into), so it's
+        // left out unless BLISH_WINE_TRAY=1.
+        private static bool ShowTrayIcon => !WindowUtil.IsWine || Environment.GetEnvironmentVariable("BLISH_WINE_TRAY") == "1";
+
         private void BuildTrayIcon() {
             string trayIconText = Strings.Common.BlishHUD;
 
@@ -58,7 +62,7 @@ namespace Blish_HUD.GameIntegration {
             _trayIcon = new NotifyIcon() {
                 Icon             = Resources.Ico2039771,
                 Text             = trayIconText,
-                Visible          = true,
+                Visible          = ShowTrayIcon,
                 ContextMenuStrip = this.TrayIconMenu
             };
 

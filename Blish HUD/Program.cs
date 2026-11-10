@@ -2,6 +2,7 @@
 using EntryPoint;
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
@@ -103,9 +104,32 @@ namespace Blish_HUD {
                     if (RestartOnExit 
                      && !(ApplicationSettings.Instance.StartGw2 > 0 
                       || ApplicationSettings.Instance.ProcessId > 0)) {
-                        Application.Restart();
+                        RestartProcess();
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Starts a fresh copy of this process.  Under Wine, <see cref="Application.Restart"/> goes through the shell, which
+        /// starts the new instance outside this process's environment (a separate window, without the Wine/Proton settings
+        /// the launcher gave us).  Starting it directly makes it inherit everything instead.
+        /// </summary>
+        private static void RestartProcess() {
+            if (!WindowUtil.IsWine) {
+                Application.Restart();
+                return;
+            }
+
+            try {
+                string args = string.Join(" ", Environment.GetCommandLineArgs().Skip(1).Select(a => "\"" + a.Replace("\"", "\\\"") + "\""));
+
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Application.ExecutablePath, args) {
+                    UseShellExecute  = false,
+                    WorkingDirectory = Path.GetDirectoryName(Application.ExecutablePath) ?? Environment.CurrentDirectory
+                })?.Dispose();
+            } catch (Exception ex) {
+                Logger?.Warn(ex, "Failed to restart Blish HUD.");
             }
         }
 
